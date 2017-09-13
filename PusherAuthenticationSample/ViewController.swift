@@ -1,25 +1,42 @@
-//
-//  ViewController.swift
-//  PusherAuthenticationSample
-//
-//  Created by Angela Dyrda on 9/10/17.
-//  Copyright © 2017 Angela Dyrda. All rights reserved.
-//
-
 import UIKit
+import PusherSwift
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, PusherDelegate, AuthRequestBuilderProtocol {
+    var client: Pusher?
+    var channel: PusherChannel?
+    var options: PusherClientOptions?
+    var appKey: String?
+    var channelName: String?
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
+        startSubscription()
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
+    func getKey(completion: @escaping ()-> Void) {
+        let url = Bundle.main.url(forResource: "Test", withExtension: "plist")
+        let dict = NSDictionary(contentsOf: url!) as? [String: Any]
+
+        if let dict = dict {
+            appKey = dict["appKey"] as? String
+            channelName = dict["channelName"] as? String
+            completion()
+        }
     }
 
+    func startSubscription() {
+        getKey {
+            self.subscribeToPresenceChannel()
+        }
+    }
 
+    func subscribeToPresenceChannel() {
+        options = PusherClientOptions(
+            authMethod: AuthMethod.authRequestBuilder(authRequestBuilder: AuthRequestBuilder())
+        )
+        client = Pusher(withAppKey: appKey!, options: options!)
+        client?.connection.delegate = self
+        channel = client?.subscribeToPresenceChannel(channelName: channelName!)
+        client?.connect()
+    }
 }
-
